@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: paper-win-rock-game
+    name: paper-win-rock
     env: node
     buildCommand: npm install
     startCommand: npm start
@@ -8,8 +8,6 @@ services:
       - key: NODE_ENV
         value: production
       - key: BOT_TOKEN
-        sync: false  # Будем добавлять вручную в панели Render
+        sync: false
     healthCheckPath: /
     autoDeploy: true
-    plans:
-      - name: free
