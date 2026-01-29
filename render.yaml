@@ -9,5 +9,8 @@ services:
         value: production
       - key: BOT_TOKEN
         sync: false
-    healthCheckPath: /
+    healthCheckPath: /health
+    healthCheckTimeout: 10
+    healthCheckInterval: 60
     autoDeploy: true
+    plan: free

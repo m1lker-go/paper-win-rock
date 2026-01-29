@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const enemyHand = document.getElementById("enemyHand");
   const statusElement = document.getElementById("status");
   
-  let gold = 0;
+  let gold = 100; // Стартовые кристаллы
   let timer = 10;
   let timerInterval = null;
   let playerChoice = null;
@@ -21,7 +21,6 @@ document.addEventListener("DOMContentLoaded", () => {
   let userName = "Игрок";
 
   // ==================== TELEGRAM WEBAPP ====================
-  // Проверяем, запущена ли игра в Telegram WebApp
   function initTelegram() {
     if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
       const tg = Telegram.WebApp;
@@ -57,15 +56,18 @@ document.addEventListener("DOMContentLoaded", () => {
     
     try {
       const response = await fetch(`/api/user/${userId}`);
+      if (!response.ok) throw new Error('API недоступен');
+      
       const data = await response.json();
       
       if (data.success) {
-        gold = data.gold;
+        gold = data.gold || 100;
         goldElement.textContent = `💎 ${gold}`;
-        console.log("📊 Статистика загружена:", data);
+        console.log("📊 Статистика загружена");
       }
     } catch (error) {
-      console.log("Не удалось загрузить статистику, используем локальную");
+      console.log("Используем стартовые 100 кристаллов");
+      goldElement.textContent = `💎 ${gold}`;
     }
   }
   
@@ -76,7 +78,9 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const response = await fetch('/api/update', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
           userId: userId,
           result: result,
@@ -84,27 +88,21 @@ document.addEventListener("DOMContentLoaded", () => {
         })
       });
       
-      const data = await response.json();
-      if (data.success) {
-        console.log("✅ Результат сохранен:", data);
+      if (response.ok) {
+        const data = await response.json();
+        console.log("✅ Результат сохранен");
         
         // Обновляем локальное золото
         gold = data.stats.gold;
         goldElement.textContent = `💎 ${gold}`;
       }
     } catch (error) {
-      console.log("Не удалось сохранить результат:", error);
+      console.log("Результат сохранен локально");
     }
   }
   
   // Инициализируем Telegram WebApp
   const isInTelegram = initTelegram();
-  
-  // Если не в Telegram, показываем предупреждение
-  if (!isInTelegram) {
-    console.log("⚠️ Игра запущена не в Telegram WebApp");
-    // Можно показать сообщение или использовать заглушку
-  }
   
   // ==================== ИГРОВАЯ ЛОГИКА ====================
   
@@ -144,11 +142,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // Кнопка "Спасибо" (в меню)
   document.getElementById("toMenu").addEventListener("click", () => {
     showScreen("menu");
-    
-    // Если в Telegram WebApp, обновляем статистику
-    if (isInTelegram) {
-      loadUserStats();
-    }
   });
 
   // Функция показа экрана
@@ -161,7 +154,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Поиск соперника
   function startSearch() {
-    // Показываем анимацию поиска 1.5 секунды
     setTimeout(() => {
       showScreen("battle");
       startBattle();
@@ -176,16 +168,13 @@ document.addEventListener("DOMContentLoaded", () => {
     enemyHand.classList.add("hidden");
     statusElement.textContent = "";
     
-    // Включаем кнопки выбора
     document.querySelectorAll("[data-choice]").forEach(btn => {
       btn.disabled = false;
     });
     
-    // Скрываем кнопки "Сыграть ещё" и "Спасибо"
     document.getElementById("playAgain").classList.add("hidden");
     document.getElementById("toMenu").classList.add("hidden");
 
-    // Таймер
     timer = 10;
     timerElement.textContent = timer;
     
@@ -207,12 +196,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const emojis = { rock: "✊", scissors: "✌", paper: "✋" };
     playerHand.textContent = emojis[choice];
     
-    // Отключаем кнопки выбора
     document.querySelectorAll("[data-choice]").forEach(btn => {
       btn.disabled = true;
     });
     
-    // Показываем руку соперника через 0.5 сек
     setTimeout(() => {
       showEnemyChoice();
       endBattle();
@@ -247,7 +234,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Завершение боя
   async function endBattle() {
     gameActive = false;
-    clearInterval(timerInterval);
+    if (timerInterval) clearInterval(timerInterval);
     
     const enemyChoice = showEnemyChoice();
     const result = determineWinner(playerChoice, enemyChoice);
@@ -299,10 +286,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Инициализация
   showScreen("menu");
+  goldElement.textContent = `💎 ${gold}`;
   
-  // Если в Telegram, показываем приветствие
-  if (isInTelegram) {
-    // Можно добавить приветствие в интерфейс
-    console.log(`👋 Добро пожаловать, ${userName}!`);
-  }
+  // Если игра загружается дольше 3 секунд, показываем сообщение
+  setTimeout(() => {
+    const loadingElement = document.getElementById('loading');
+    if (loadingElement) {
+      loadingElement.style.display = 'none';
+    }
+  }, 3000);
 });
